@@ -6,7 +6,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {Relationship} from "./utils/Relationship.sol";
 
-contract FixedDeposit is ReentrancyGuard, Relationship {
+contract StakeSpacePi is ReentrancyGuard, Relationship {
     using SafeMath for uint256;
     struct Pool {
         uint256 apr; // pool apr

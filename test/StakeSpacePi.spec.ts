@@ -1,14 +1,14 @@
 import chai, {expect} from 'chai'
 import {MockProvider, solidity} from 'ethereum-waffle'
-import {Wallet, BigNumber} from "ethers";
+import {Wallet, BigNumber, Contract} from "ethers";
 import {FixedDeposit, TestERC20} from "../typechain-types";
 import {ethers} from "hardhat";
 
 chai.use(solidity)
 
-describe('FixedDeposit', function () {
+describe('StakeSpacePi', function () {
   let wallets: Wallet[]
-  let contract: FixedDeposit
+  let contract: Contract
   let token: TestERC20
   const provider = new MockProvider({
     ganacheOptions: {
@@ -22,7 +22,7 @@ describe('FixedDeposit', function () {
     const tokenFactory = await ethers.getContractFactory('TestERC20', wallets[0])
     token = await tokenFactory.connect(wallets[0]).deploy('Token', 'TKN', 10000000000000) as TestERC20
 
-    const contractFactory = await ethers.getContractFactory('FixedDeposit', wallets[0])
+    const contractFactory = await ethers.getContractFactory('StakeSpacePi', wallets[0])
     const start = Math.floor(Date.now() / 1000)
     const end = start + 86400
     contract = await contractFactory.deploy(token.address,start, end)
