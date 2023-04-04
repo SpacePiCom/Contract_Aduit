@@ -1,4 +1,4 @@
-# FixedDeposit.sol tech docs
+# StakeSpacePi.sol tech docs
 
 
 ## Project Overview
@@ -8,7 +8,7 @@ Solidity project is based fixed APR interest bouns contract. It allows owners to
 ## 1. Functional Requirements
 
 ### 1.1 Roles
-FixedDeposit.sol has 2 roles:
+StakeSpacePi.sol has 2 roles:
 - Owner: The owner of the contract. The owner can add/remove APR plans, deposit tokens, and withdraw tokens.
 - User: The user of the contract. The user can deposit tokens to receive bouns.
 
@@ -29,10 +29,10 @@ FixedDeposit.sol has 2 roles:
 
 ## 2.1 Architecture Diagram
 ## 2.2 Contract Information
-### 2.2.1 FixedDeposit.sol
+### 2.2.1 StakeSpacePi.sol
 A token holder contract that will allow a user to deposit tokens and receive bouns in per interval.
 ### 2.2.2 Assets
-FixedDeposit.sol has two Structs:
+StakeSpacePi.sol has two Structs:
 - Pool: The pool of the contract. The pool contains the APR plans.
   - uint256 apr - The APR of the plan.
   - uint256 lockBlocks - The interval of the plan.
