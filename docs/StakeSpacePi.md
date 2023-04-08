@@ -31,6 +31,9 @@ StakeSpacePi.sol has 2 roles:
 ## 2.2 Contract Information
 ### 2.2.1 StakeSpacePi.sol
 A token holder contract that will allow a user to deposit tokens and receive bouns in per interval.
+### inherit
+- [Relationship.sol](./Relationship.md)
+
 ### 2.2.2 Assets
 StakeSpacePi.sol has two Structs:
 - Pool: The pool of the contract. The pool contains the APR plans.

@@ -86,7 +86,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         Pool memory pool = pools[pid];
         UserInfo memory user = userInfo[play][pid];
         if (user.amount == 0) return 0;
-        uint256 perBlock = user.amount.mul(pool.apr).div(365 days).div(100).mul(perBlockTime);
+        uint256 perBlock = user.amount.mul(pool.apr).mul(perBlockTime).div(365 days).div(100);
         if (time >= pool.lockBlocks.add(user.enterBlock)) {
             if (user.settledBlock >= pool.lockBlocks) return 0;
             return perBlock.mul(pool.lockBlocks.sub(user.settledBlock)).add(user.rewardDebt);
@@ -112,7 +112,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
 
         if (user.amount > 0) {
             if (reward > 0) {
-                user.rewardDebt = user.rewardDebt.add(reward);
+                user.rewardDebt = reward;
                 user.settledBlock = block.number.sub(user.enterBlock);
             }
         }
@@ -122,11 +122,13 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         emit Deposit(msg.sender, pid, amount);
     }
     // @dev withdraw deposit token whether unlock
-    function withdraw(uint256 pid) external nonReentrant onlyUnLock(pid, msg.sender) {
+    function withdraw(uint256 pid) external onlyUnLock(pid, msg.sender) {
         UserInfo storage user = userInfo[msg.sender][pid];
         Pool storage pool = pools[pid];
         uint256 amount = user.amount;
+        uint256 reward = pending(pid, msg.sender);
         require(user.amount >= 0, "withdraw: Principal is zero");
+        if (reward > 0) claim(pid);
         user.amount = 0;
         user.enterBlock = 0;
         user.settledBlock = 0;
@@ -139,13 +141,13 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
 
     // @dev claim interest, not locking withdraw
     // @dev inviter will get setting percent of the interest
-    function claim(uint256 pid) external nonReentrant{
+    function claim(uint256 pid) public nonReentrant{
         UserInfo storage user = userInfo[msg.sender][pid];
         Pool memory pool = pools[pid];
         uint256 reward = pending(pid, msg.sender);
         require(reward > 0, "claim: interest is zero");
         require(!user.claimed, "claim: time ends claimed");
-        if (token.balanceOf(address(this)).sub(accDeposit) >= reward&&!user.claimed) {
+        if (token.balanceOf(address(this)).sub(accDeposit) >= reward) {
             address inviter = getParent(msg.sender);
 
             uint256 userInviteReward = reward.mul(inviteRewardRate).div(100);
@@ -154,7 +156,11 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
             token.transfer(msg.sender, userReward);
             if (user.enterBlock.add(pool.lockBlocks) < block.number) user.claimed = true;
             user.accReward = user.accReward.add(userReward);
-            user.settledBlock = block.number.sub(user.enterBlock);
+
+            if ((block.number - user.enterBlock) >= pool.lockBlocks) user.settledBlock = pool.lockBlocks;
+            else user.settledBlock = block.number.sub(user.enterBlock);
+//            user.settledBlock = block.number.sub(user.enterBlock);
+
             user.rewardDebt = 0;
             accReward = accReward.add(reward);
             inviteReward[inviter] = inviteReward[inviter].add(userInviteReward);

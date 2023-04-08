@@ -1,7 +1,7 @@
 import chai, {expect} from 'chai'
 import {MockProvider, solidity} from 'ethereum-waffle'
 import {Wallet, BigNumber, Contract} from "ethers";
-import {FixedDeposit, TestERC20} from "../typechain-types";
+import {TestERC20} from "../typechain-types";
 import {ethers} from "hardhat";
 
 chai.use(solidity)
@@ -63,15 +63,16 @@ describe('StakeSpacePi', function () {
     await token.connect(wallets[0]).approve(contract.address, 10000000000000)
     await token.connect(wallets[0]).approve(contract.address, 10000000000000)
     await token.connect(wallets[0]).approve(contract.address, 10000000000000)
+    await token.connect(wallets[0]).approve(contract.address, 10000000000000)
     await contract.connect(wallets[0]).withdraw(3)
     expect((await contract.userInfo(wallets[0].address,3)).amount).to.eq(0)
-    expect(await token.balanceOf(wallets[0].address)).to.eq(10000000000000)
+    expect(await token.balanceOf(wallets[0].address)).to.gte(10000000000000)
   });
   // any suit
   it('should can\'t deposit after end', async () => {
     const start = Math.floor(Date.now() / 1000) - 86400
     const end = start
-    const contractFactory = await ethers.getContractFactory('FixedDeposit', wallets[0])
+    const contractFactory = await ethers.getContractFactory('StakeSpacePi', wallets[0])
     contract = await contractFactory.deploy(token.address,start, end)
     await token.connect(wallets[0]).setBalance(contract.address, 1000000000000)
     await token.connect(wallets[0]).approve(contract.address, 100)

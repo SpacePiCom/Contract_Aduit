@@ -35,7 +35,6 @@ contract ERC721Distributor is Ownable, ReentrancyGuard, Relationship {
     //    mapping(address => uint256) public bought;
     mapping(address => mapping(address => uint256)) private bought;
     mapping(address => uint256) public prices;
-    address[] public tokens;
     constructor(
         uint256 end,
         address _nft,
