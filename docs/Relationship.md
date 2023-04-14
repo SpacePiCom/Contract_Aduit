@@ -14,7 +14,8 @@ Relationship.sol has 2 roles:
 - invite users(User)
 
 ## 1.3 Use Cases
-
+1. Owner set time start or end.
+2. User binding other user as its inviter. and generate a invitation code. if not inviter, can use default code binding to inviter.
 ## 2. Technical Requirements
 
 ## 2.1 Architecture Diagram

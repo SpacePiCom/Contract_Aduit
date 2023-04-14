@@ -23,7 +23,11 @@ StakeSpacePi.sol has 2 roles:
   - 180 days: 15% APR
 
 ## 1.3 Use Cases
-
+1. The owner creates different APR plans. A APR plan should contain the APR and the interval. the interval is the locked time by block number.
+2. The user deposits tokens to the contract. The user can select the APR plan and the amount of tokens to deposit.
+3. The user receives bouns in per interval.
+4. The user withdraws tokens from the contract. if has bouns, the user can withdraw bouns first, then withdraw deposit.
+5. Anybody can see their pending bouns.
 
 ## 2. Technical Requirements
 
@@ -31,8 +35,8 @@ StakeSpacePi.sol has 2 roles:
 ## 2.2 Contract Information
 ### 2.2.1 StakeSpacePi.sol
 A token holder contract that will allow a user to deposit tokens and receive bouns in per interval.
-### inherit
-- [Relationship.sol](./Relationship.md)
+### inherit Relationship.sol
+- [docs here](./Relationship.md)
 
 ### 2.2.2 Assets
 StakeSpacePi.sol has two Structs:
