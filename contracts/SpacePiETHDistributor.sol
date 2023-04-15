@@ -35,7 +35,7 @@ contract SpacePiETHDistributor is Ownable {
         uint256 claimedBitIndex = index % 256;
         claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
     }
-    function setLimit(uint256 newLimit) external {
+    function setLimit(uint256 newLimit) external onlyOwner {
         perUserClaimLimit = newLimit;
     }
     function claim(uint256 index,bytes memory signature)
