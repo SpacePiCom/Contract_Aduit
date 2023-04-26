@@ -4,11 +4,11 @@ pragma solidity >=0.8.9;
 import {IERC20, SafeERC20, Address} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
     error AlreadyClaimed();
     error InvalidSignature();
 
-contract SpacePiETHDistributor is Ownable {
+contract SpacePiETHDistributor is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -51,12 +51,16 @@ contract SpacePiETHDistributor is Ownable {
     // @dev claim tokens
     // @param index the index of the claim
     // @param signature the signature from singer
-    function claim(uint256 index,bytes memory signature) public {
+    function claim(uint256 index,bytes memory signature) public nonReentrant {
         address account = msg.sender;
         if (isClaimed(index)) revert AlreadyClaimed();
 
-        // Verify the signature from singer.
-        bytes memory node = abi.encodePacked(index, account);
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        // Verify the signature from signer.
+        bytes memory node = abi.encodePacked(index, account, chainId);
         address _signer = ECDSA.recover(ECDSA.toEthSignedMessageHash(node), signature);
         if (_signer != signer) revert InvalidSignature();
 
