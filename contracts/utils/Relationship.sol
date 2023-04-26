@@ -33,7 +33,7 @@ contract Relationship is Ownable,IRelationship {
     }
 
     modifier inDuration {
-        require(block.timestamp < endsTime);
+        require(block.timestamp < endsTime, "not in time");
         _;
     }
     function setEnds(uint256 _end) public onlyOwner{

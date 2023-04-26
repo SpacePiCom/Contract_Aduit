@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.8.18;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -46,8 +46,8 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
 //        token = IERC20(0x97b3d934F051F506a71e56C0233EA344FCdc54d2);
         token = _token;
         // only for test
-//        addPool(40, 60 seconds / perBlockTime);
-//        addPool(80, 600 seconds / perBlockTime);
+//        addPool(40, 60 seconds);
+//        addPool(40, 60 seconds);
         // production
         addPool(7, 30 days);
         addPool(12, 90 days);
@@ -86,12 +86,12 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         Pool memory pool = pools[pid];
         UserInfo memory user = userInfo[play][pid];
         if (user.amount == 0) return 0;
-        uint256 perBlock = user.amount.mul(pool.apr).mul(perBlockTime).div(365 days).div(100);
+        uint256 perBlock = user.amount.mul(pool.apr).mul(perBlockTime).mul(1e18).div(365 days).div(100);
         if (time >= pool.lockBlocks.add(user.enterBlock)) {
             if (user.settledBlock >= pool.lockBlocks) return 0;
-            return perBlock.mul(pool.lockBlocks.sub(user.settledBlock)).add(user.rewardDebt);
+            return perBlock.mul(pool.lockBlocks.sub(user.settledBlock)).div(1e18).add(user.rewardDebt);
         }
-        return perBlock.mul(time.sub(user.enterBlock).sub(user.settledBlock)).add(user.rewardDebt);
+        return perBlock.mul(time.sub(user.enterBlock).sub(user.settledBlock)).div(1e18).add(user.rewardDebt);
     }
 
     // @dev deposit token can repeat, will settle the previous deposit
@@ -99,7 +99,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
     function deposit(uint256 pid, uint256 amount) external nonReentrant onlyInvited(msg.sender) inDuration {
         Pool storage pool = pools[pid];
         UserInfo storage user = userInfo[msg.sender][pid];
-        token.transferFrom(msg.sender, address(this), amount);
+        require(token.transferFrom(msg.sender, address(this), amount), "deposit: transferFrom failed");
         uint256 reward = pending(pid, msg.sender);
         uint256 currentBlock = block.number;
         if (user.enterBlock == 0) {
@@ -135,7 +135,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         user.claimed = false;
         accDeposit = accDeposit.sub(amount);
         pool.amount = pool.amount.sub(amount);
-        token.transfer(msg.sender, amount);
+        require(token.transfer(msg.sender, amount), "withdraw: transfer failed");
         emit Withdraw(msg.sender, pid, amount);
     }
 
@@ -152,8 +152,8 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
 
             uint256 userInviteReward = reward.mul(inviteRewardRate).div(100);
             uint256 userReward = reward.sub(userInviteReward);
-            token.transfer(inviter, userInviteReward);
-            token.transfer(msg.sender, userReward);
+            require(token.transfer(inviter, userInviteReward), "claim: transfer to inviter failed");
+            require(token.transfer(msg.sender, userReward), "claim: transfer to user failed");
             if (user.enterBlock.add(pool.lockBlocks) < block.number) user.claimed = true;
             user.accReward = user.accReward.add(userReward);
 
