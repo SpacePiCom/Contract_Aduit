@@ -50,7 +50,7 @@ contract SpacePiETHDistributor is Ownable, ReentrancyGuard {
     }
     // @dev claim tokens
     // @param index the index of the claim
-    // @param signature the signature from singer
+    // @param signature the signature from signer
     function claim(uint256 index,bytes memory signature) public nonReentrant {
         address account = msg.sender;
         if (isClaimed(index)) revert AlreadyClaimed();
@@ -60,7 +60,7 @@ contract SpacePiETHDistributor is Ownable, ReentrancyGuard {
             chainId := chainid()
         }
         // Verify the signature from signer.
-        bytes memory node = abi.encodePacked(index, account, chainId);
+        bytes memory node = abi.encodePacked(index, account, chainId, address(this));
         address _signer = ECDSA.recover(ECDSA.toEthSignedMessageHash(node), signature);
         if (_signer != signer) revert InvalidSignature();
 
