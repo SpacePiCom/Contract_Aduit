@@ -14,13 +14,13 @@ import "../interfaces/IRelationship.sol";
 */
 contract Relationship is Ownable,IRelationship {
 
-    bytes public defaultCode = "space0";
+    bytes public constant defaultCode = "space0";
     uint256 public beginsTime;
     uint256 public endsTime;
     // User is the address of the person who is invited
     mapping(address => User) private _relations;
     // code used to invite
-    mapping(bytes => address) private _codeUsed;
+    mapping(bytes => address) public codeUsed;
 
     event Binding(address indexed inviter, address indexed invitee, bytes code);
 
@@ -29,23 +29,25 @@ contract Relationship is Ownable,IRelationship {
         endsTime = ends;
         _relations[msg.sender].code = defaultCode;
         _relations[msg.sender].inviter = msg.sender;
-        _codeUsed[defaultCode] = msg.sender;
+        codeUsed[defaultCode] = msg.sender;
     }
 
     modifier inDuration {
         require(block.timestamp < endsTime, "not in time");
         _;
     }
-    function setEnds(uint256 _end) public onlyOwner{
+    function setEnds(uint256 _end) external onlyOwner{
+        require(_end > block.timestamp, "endsTime must > now");
         endsTime = _end;
     }
-    function setStart(uint256 _start) public onlyOwner{
+    function setStart(uint256 _start) external onlyOwner{
+        require(_start < block.timestamp, "beginsTime must < now");
         beginsTime = _start;
     }
     // @param inviter address of the person who is inviting
-    function binding(bytes memory c) public override inDuration {
+    function binding(bytes memory c) external override inDuration {
         address sender = msg.sender;
-        address inviter = _codeUsed[c];
+        address inviter = codeUsed[c];
         require(inviter != address(0), "code not found");
         require(inviter != sender, "Not allow inviter by self");
         // invitee address info
@@ -53,17 +55,17 @@ contract Relationship is Ownable,IRelationship {
         // inviter address info
         User storage parent = _relations[inviter];
 
-        require(parent.indexes[sender] == 0, "Can not accept child invitation");
+        require(parent.lengths[sender] == 0, "Can not accept child invitation");
         require(self.inviter == address(0), "Already bond invite");
         parent.inviteeList.push(Invitee(sender, block.timestamp));
-        parent.indexes[sender] = self.inviteeList.length;
+        parent.lengths[sender] = self.inviteeList.length;
 
         self.inviter = inviter;
         bytes memory code = _genCode(sender);
-        require(_codeUsed[code] == address(0), "please try again");
+        require(codeUsed[code] == address(0), "please try again");
         self.code = code;
 
-        _codeUsed[code] = sender;
+        codeUsed[code] = sender;
         emit Binding(inviter, sender, code);
     }
 
@@ -74,7 +76,7 @@ contract Relationship is Ownable,IRelationship {
     }
 
     // @param get player address invitee list
-    function getInviteeList(address player) public view override returns (Invitee[] memory){
+    function getInviteeList(address player) external view override returns (Invitee[] memory){
         return _relations[player].inviteeList;
     }
 
@@ -84,13 +86,13 @@ contract Relationship is Ownable,IRelationship {
     }
 
     // @param get player address invitation code
-    function getInviteCode(address player) public view override returns (bytes memory){
+    function getInviteCode(address player) external view override returns (bytes memory){
         return _relations[player].code;
     }
 
     // @param get player address by invitation code
-    function getPlayerByCode(bytes memory code) public view override returns (address){
-        return _codeUsed[code];
+    function getPlayerByCode(bytes memory code) external view override returns (address){
+        return codeUsed[code];
     }
 
     function _genCode(address player) private view  returns (bytes memory){

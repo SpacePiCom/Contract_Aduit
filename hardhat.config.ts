@@ -2,7 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import 'hardhat-deploy';
 import 'dotenv/config';
-
+import '@nomicfoundation/hardhat-chai-matchers';
 let deployer = process.env.PRIVATE_KEY || '' // private key
 deployer = !deployer.startsWith('0x')? `0x${deployer}`: deployer
 

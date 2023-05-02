@@ -14,7 +14,7 @@ interface IRelationship {
         Invitee[] inviteeList;
         address inviter;
         bytes code;
-        mapping(address => uint256) indexes;
+        mapping(address => uint256) lengths;
     }
 
     function binding(bytes memory c) external;
