@@ -25,8 +25,8 @@ describe('StakeSpacePi', function () {
     const contractFactory = await ethers.getContractFactory('StakeSpacePi', deployerAccount)
     const start = await time.latest()
     const end = start + 365 * 86400
-    contract = await contractFactory.deploy(token.address, start, end) as StakeSpacePi
-    await token.setBalance(contract.address, depositAmount)
+    contract = await contractFactory.deploy(token.address, end) as StakeSpacePi
+    await token.setBalance(contract.address, depositAmount.mul(1e8))
     await token.setBalance(firstAccount.address, depositAmount)
     await token.setBalance(secondAccount.address, depositAmount)
     await token.setBalance(thirdAccount.address, depositAmount)
@@ -54,7 +54,7 @@ describe('StakeSpacePi', function () {
     expect((await contract.userInfo(firstAccount.address, 0)).amount).to.eq(depositAmount)
   })
   it('should can\'t claim', async () => {
-    await expect(contract.connect(firstAccount).claim(0)).to.reverted
+    await expect(contract.connect(firstAccount).claim(0)).to.revertedWith('claim: interest is zero')
   })
   it('should claim', async () => {
     await token.connect(firstAccount).approve(contract.address, depositAmount)
@@ -111,7 +111,7 @@ describe('StakeSpacePi', function () {
     await token.connect(secondAccount).approve(contract.address, depositAmount);
     // Use default code to invite himselfs
 // Get initial account code
-    const firstCode = await contract.connect(firstAccount).getInviteCode(firstAccount.address);
+    const firstCode = await contract.connect(firstAccount).getInviteCode();
 // Uses for inviting his alternate account
     await contract.connect(secondAccount).binding(firstCode);
 // alternate parent is equal to initial account
@@ -150,7 +150,7 @@ describe('StakeSpacePi', function () {
     expect(AfterInitialBalance).to.eq(AfterInitialShouldBe);
     expect(AfteralternateBalance).to.eq(AfterAlternateShouldBe);
   });
-  it("Mistaken reward distribution- Invalid Calculations(resolved)", async function () {
+  it("Multi user deposit test", async function () {
 // await token.connect(wallets[0]).approve(contract.address, 10000000000000)
     await token.setBalance(firstAccount.address, depositAmount.mul(2));
     await token.connect(firstAccount).approve(contract.address, depositAmount.mul(2));
@@ -201,6 +201,42 @@ describe('StakeSpacePi', function () {
     const third = afterThirdBalance.sub(initialThirdBalance)
     const profitsecondAndThird = second.add(third)
     expect(profitFirst).to.be.lte(profitsecondAndThird)
-  });
+  })
+  it('should not deposit zero', async function (){
+    await token.connect(firstAccount).approve(contract.address, depositAmount)
+    expect(contract.deposit(0,0)).to.be.revertedWith('deposit: amount must > 0')
+  })
+  it('Should not be unlimited', async function (){
+    await token.connect(firstAccount).approve(contract.address, depositAmount)
+    await contract.connect(firstAccount).deposit(0, depositAmount)
+    await time.increase(30*86400)
+    await contract.connect(firstAccount).claim(0)
+    expect(contract.connect(firstAccount).claim(0)).to.be.revertedWith('claim: interest is zero')
+  })
+  it('It should not be possible to deposit when it is not within the project time', async function (){
+    await token.connect(firstAccount).approve(contract.address, depositAmount)
+    const end = await contract.endsTime()
+    await time.increaseTo(end.add(60))
 
+    expect(contract.deposit(0,depositAmount)).to.be.revertedWith('not in time')
+  })
+
+  it('should not withdraw amount is zero', async function () {
+    await token.connect(firstAccount).approve(contract.address, depositAmount.mul(2))
+
+    await contract.connect(firstAccount).deposit(0, depositAmount)
+    await time.increase(30*86400)
+    await contract.connect(firstAccount).withdraw(0)
+    expect(await contract.connect(firstAccount).withdraw(0)).to.be.revertedWith('withdraw: Principal is zero')
+  })
+  it('Event emit correct test', async function () {
+    await token.connect(firstAccount).approve(contract.address, depositAmount)
+    expect(contract.connect(firstAccount).deposit(0,depositAmount)).to.be.emit(contract,'Deposit')
+    await time.increase(30*86400)
+    expect(contract.connect(firstAccount).claim(0)).to.be.emit(contract,'Reward').emit(contract,'InviterReward')
+    expect(contract.connect(firstAccount).withdraw(0)).to.be.emit(contract,'Withdraw')
+
+    expect(contract.connect(deployerAccount).setPool(0, 50,1)).to.be.emit(contract,'SetPool')
+    expect(contract.connect(deployerAccount).addPool(60, 1000)).to.be.emit(contract,'AddPool')
+  })
 })

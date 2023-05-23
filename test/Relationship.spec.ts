@@ -24,7 +24,7 @@ describe(contractName, function () {
     const start = Math.floor(new Date().getTime() / 1000)
     const end = Math.floor((new Date().getTime() / 1000) + 86400)
     const RelationFactory = await ethers.getContractFactory(contractName)
-    contract = await RelationFactory.connect(accounts[0]).deploy(start, end) as Relationship
+    contract = await RelationFactory.connect(accounts[0]).deploy(end) as Relationship
   })
 
   describe('flow', function () {
@@ -37,7 +37,7 @@ describe(contractName, function () {
       const bindingTx = await contract.connect(accounts[1]).binding(defaultCode)
       tx = await bindingTx.wait()
       it('verify invite code', async function () {
-        inviteCode = await contract.getInviteCode(accounts[0].address)
+        inviteCode = await contract.connect(accounts[0]).getInviteCode()
         const code = keccak256(
           defaultAbiCoder.encode(['address', 'uint256'], [accounts[0].address, tx.blockNumber])
         )

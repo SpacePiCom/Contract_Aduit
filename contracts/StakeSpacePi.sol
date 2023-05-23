@@ -19,10 +19,9 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         uint256 rewardDebt; // user reward debt
         uint256 enterTime; // user enter timestamp
         uint256 billedSeconds; // user billed seconds
-        bool claimed;
     }
 
-    Pool[] public pools;
+    Pool[] public pools; // stake pools
     IERC20 public token; // using token
     uint256 public accDeposit; // accumulate all deposit
     uint256 public accReward; // accumulate all reward
@@ -40,7 +39,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
     event AddPool(uint256 indexed apr, uint256 indexed locked, uint256 indexed pid);
     event SetPool(uint256 indexed apr, uint256 indexed locked, uint256 indexed pid);
 
-    constructor(IERC20 _token, uint256 start,uint256 end)Relationship(start,end){
+    constructor(IERC20 _token,uint256 end)Relationship(end){
         token = _token;
     }
     modifier onlyUnLock(uint256 pid, address _sender){
@@ -58,6 +57,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         require(getParent(_sender) != address(0), "onlyInvited:only invited");
         _;
     }
+    // @dev add a new stake pool
     function addPool(uint256 apr,uint256 locked) external onlyOwner{
         require(apr > 5, "setPool: apr must > 5");
         require(apr < 500, "setPool: apr must < 500");
@@ -65,9 +65,11 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         pools.push(Pool(apr, locked, 0));
         emit AddPool(apr, locked, pools.length - 1);
     }
+    // @dev total pools length
     function poolLength() external view returns (uint256) {
         return pools.length;
     }
+    // @dev modify pool apr and lock time
     function setPool(uint256 pid, uint256 apr, uint256 locked) external onlyOwner onlyNotDeposit{
         require(apr > 5, "setPool: apr must > 5");
         require(apr < 500, "setPool: apr must < 500");
@@ -82,6 +84,7 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         Pool memory pool = pools[pid];
         UserInfo memory user = userInfo[play][pid];
         if (user.amount == 0) return 0;
+        // reward formula = (amount * apr * delta elapsed time) + billing unclaimed
         uint256 perSecond = user.amount * pool.apr * 1e18 / 365 days / 100;
         if (time >= pool.lockSeconds + user.enterTime) {
             if (user.billedSeconds >= pool.lockSeconds) return 0;
@@ -99,20 +102,23 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         token.safeTransferFrom(msg.sender, address(this), amount);
         uint256 reward = pending(pid, msg.sender);
         uint256 currentBlock = block.timestamp;
+        // if user first deposit, set enter time
         if (user.enterTime == 0) {
             user.enterTime = block.timestamp;
         }
+        // if lock-up time period is over, reset enter time
         if (currentBlock > user.enterTime+ pool.lockSeconds) {
             if (reward > 0) revert("deposit: reward claim first");
             user.enterTime = block.timestamp;
         }
-
+        // if user has deposit, settle the previous deposit
         if (user.amount > 0) {
             if (reward > 0) {
                 user.rewardDebt = reward;
                 user.billedSeconds = block.timestamp - user.enterTime;
             }
         }
+        // record user deposit amount
         pool.amount = pool.amount + amount;
         user.amount = user.amount + amount;
         accDeposit = accDeposit + amount;
@@ -125,13 +131,16 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         uint256 amount = user.amount;
         uint256 reward = pending(pid, msg.sender);
         require(user.amount >= 0, "withdraw: Principal is zero");
+        // If there is a reward, first receive the reward before receiving the deposit
         if (reward > 0) claim(pid);
+        // reset record
         user.amount = 0;
         user.enterTime = 0;
         user.billedSeconds = 0;
-        user.claimed = false;
+
         accDeposit = accDeposit - amount;
         pool.amount = pool.amount - amount;
+        // withdraw deposit amount
         token.safeTransfer(msg.sender, amount);
         emit Withdraw(msg.sender, pid, amount);
     }
@@ -143,20 +152,27 @@ contract StakeSpacePi is ReentrancyGuard, Relationship {
         Pool memory pool = pools[pid];
         uint256 reward = pending(pid, msg.sender);
         require(reward > 0, "claim: interest is zero");
-        require(!user.claimed, "claim: time ends claimed");
+        // if not enough reward, will claim all remaining reward
         if (token.balanceOf(address(this)) - accDeposit >= reward) {
             address inviter = getParent(msg.sender);
-
+            // calc inviter reward
             uint256 userInviteReward = reward * inviteRewardRate / 100;
+            // calc user reward
             uint256 userReward = reward - userInviteReward;
+            // transfer reward
             token.safeTransfer(inviter, userInviteReward);
             token.safeTransfer(msg.sender, userReward);
-            if (user.enterTime + pool.lockSeconds < block.timestamp) user.claimed = true;
+
             user.accReward = user.accReward + userReward;
 
-            if ((block.timestamp - user.enterTime) >= pool.lockSeconds) user.billedSeconds = pool.lockSeconds;
-            else user.billedSeconds = block.timestamp - user.enterTime;
-
+            if ((block.timestamp - user.enterTime) >= pool.lockSeconds) {
+                // lock-up time period ends, set to lock seconds
+                user.billedSeconds = pool.lockSeconds;
+            } else {
+                // If not finished, calculate the elapsed time from the start
+                user.billedSeconds = block.timestamp - user.enterTime;
+            }
+            // record info
             user.rewardDebt = 0;
             accReward = accReward + reward;
             inviteReward[inviter] = inviteReward[inviter] + userInviteReward;

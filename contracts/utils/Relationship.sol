@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.18;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IRelationship.sol";
@@ -14,8 +14,11 @@ import "../interfaces/IRelationship.sol";
 */
 contract Relationship is Ownable,IRelationship {
 
+    // @dev default code
     bytes public constant defaultCode = "space0";
+    // @dev start time
     uint256 public beginsTime;
+    // @dev end time
     uint256 public endsTime;
     // User is the address of the person who is invited
     mapping(address => User) private _relations;
@@ -24,8 +27,8 @@ contract Relationship is Ownable,IRelationship {
 
     event Binding(address indexed inviter, address indexed invitee, bytes code);
 
-    constructor(uint256 begins, uint256 ends) {
-        beginsTime = begins;
+    constructor(uint256 ends) {
+        beginsTime = block.timestamp;
         endsTime = ends;
         _relations[msg.sender].code = defaultCode;
         _relations[msg.sender].inviter = msg.sender;
@@ -36,14 +39,7 @@ contract Relationship is Ownable,IRelationship {
         require(block.timestamp < endsTime, "not in time");
         _;
     }
-    function setEnds(uint256 _end) external onlyOwner{
-        require(_end > block.timestamp, "endsTime must > now");
-        endsTime = _end;
-    }
-    function setStart(uint256 _start) external onlyOwner{
-        require(_start < block.timestamp, "beginsTime must < now");
-        beginsTime = _start;
-    }
+
     // @param inviter address of the person who is inviting
     function binding(bytes memory c) external override inDuration {
         address sender = msg.sender;
@@ -86,8 +82,8 @@ contract Relationship is Ownable,IRelationship {
     }
 
     // @param get player address invitation code
-    function getInviteCode(address player) external view override returns (bytes memory){
-        return _relations[player].code;
+    function getInviteCode() external view override returns (bytes memory){
+        return _relations[msg.sender].code;
     }
 
     // @param get player address by invitation code

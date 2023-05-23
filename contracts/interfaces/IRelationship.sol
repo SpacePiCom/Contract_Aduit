@@ -25,7 +25,7 @@ interface IRelationship {
 
     function getParent(address player) external view returns (address);
 
-    function getInviteCode(address player) external view returns (bytes memory);
+    function getInviteCode() external view returns (bytes memory);
 
     function getPlayerByCode(bytes memory code) external view returns (address);
 }
