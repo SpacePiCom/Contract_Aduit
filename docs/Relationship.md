@@ -11,7 +11,8 @@ Relationship.sol has 2 roles:
 
 ## 1.2 Features
 - set time end(Owner).
-- invite users(User)
+- invite users(User). Un-limit to invite anyone to get reward.
+- Allow anyone to use someone else's invite code without permission. 
 
 ## 1.3 Use Cases
 1. Owner set time start or end.

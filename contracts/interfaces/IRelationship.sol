@@ -13,11 +13,11 @@ interface IRelationship {
     struct User {
         Invitee[] inviteeList;
         address inviter;
-        bytes code;
+        bytes32 code;
         mapping(address => uint256) lengths;
     }
 
-    function binding(bytes memory c) external;
+    function binding(bytes32 c) external;
 
     function isInvited(address player) external view returns (bool);
 
@@ -25,7 +25,7 @@ interface IRelationship {
 
     function getParent(address player) external view returns (address);
 
-    function getInviteCode() external view returns (bytes memory);
+    function getInviteCode() external view returns (bytes32);
 
-    function getPlayerByCode(bytes memory code) external view returns (address);
+    function getPlayerByCode(bytes32 code) external view returns (address);
 }

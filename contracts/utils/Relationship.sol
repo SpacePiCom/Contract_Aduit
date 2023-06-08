@@ -15,7 +15,7 @@ import "../interfaces/IRelationship.sol";
 contract Relationship is Ownable,IRelationship {
 
     // @dev default code
-    bytes public constant defaultCode = "space0";
+    bytes32 public constant defaultCode = keccak256("space0");
     // @dev start time
     uint256 public beginsTime;
     // @dev end time
@@ -23,9 +23,9 @@ contract Relationship is Ownable,IRelationship {
     // User is the address of the person who is invited
     mapping(address => User) private _relations;
     // code used to invite
-    mapping(bytes => address) public codeUsed;
+    mapping(bytes32 => address) public codeUsed;
 
-    event Binding(address indexed inviter, address indexed invitee, bytes code);
+    event Binding(address indexed inviter, address indexed invitee, bytes32 code);
 
     constructor(uint256 ends) {
         beginsTime = block.timestamp;
@@ -41,7 +41,7 @@ contract Relationship is Ownable,IRelationship {
     }
 
     // @param inviter address of the person who is inviting
-    function binding(bytes memory c) external override inDuration {
+    function binding(bytes32 c) external override inDuration {
         address sender = msg.sender;
         address inviter = codeUsed[c];
         require(inviter != address(0), "code not found");
@@ -57,7 +57,7 @@ contract Relationship is Ownable,IRelationship {
         parent.lengths[sender] = self.inviteeList.length;
 
         self.inviter = inviter;
-        bytes memory code = _genCode(sender);
+        bytes32 code = _genCode(sender);
         require(codeUsed[code] == address(0), "please try again");
         self.code = code;
 
@@ -82,21 +82,17 @@ contract Relationship is Ownable,IRelationship {
     }
 
     // @param get player address invitation code
-    function getInviteCode() external view override returns (bytes memory){
+    function getInviteCode() external view override returns (bytes32){
         return _relations[msg.sender].code;
     }
 
     // @param get player address by invitation code
-    function getPlayerByCode(bytes memory code) external view override returns (address){
+    function getPlayerByCode(bytes32 code) external view override returns (address){
         return codeUsed[code];
     }
 
-    function _genCode(address player) private view  returns (bytes memory){
-        bytes32 hash = keccak256(abi.encode(player, block.number));
-        bytes memory code = new bytes(6);
-        for (uint256 i = 0; i < code.length; i++) {
-            code[i] = hash[i];
-        }
-        return code;
+    function _genCode(address player) private view  returns (bytes32 hash){
+        hash = keccak256(abi.encode(player, block.number));
+        return hash;
     }
 }
