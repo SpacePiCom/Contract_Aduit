@@ -21,6 +21,7 @@ StakeSpacePi.sol has 2 roles:
   - 30 days: 7% APR
   - 90 days: 12% APR
   - 180 days: 15% APR
+- Referrer address can get 10% reward, when the user claim the bouns. All invitees can become referrers.
 
 ## 1.3 Use Cases
 1. The owner creates different APR plans. A APR plan should contain the APR and the interval. the interval is the locked time by block number.
