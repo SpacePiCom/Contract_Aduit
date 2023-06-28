@@ -39,7 +39,7 @@ contract ERC721Distributor is Ownable, ReentrancyGuard, Relationship {
         uint256 end,
         address _nft,
         uint256 _total
-    )Relationship(block.timestamp, end) {
+    )Relationship(end) {
         started = block.timestamp;
         ended = end;
         nft = _nft;
